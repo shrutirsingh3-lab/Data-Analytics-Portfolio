@@ -1,5 +1,8 @@
 # 🛒 E-Commerce Analytics SQL Project
-
+## 🔥 Project Highlights
+- End-to-end SQL project on real-world dataset
+- Covers basic to advanced SQL queries
+- Includes business insights and analysis
 ## 📌 Objective
 Analyze customer behavior, sales trends, and product performance using SQL.
 
