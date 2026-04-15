@@ -1,0 +1,113 @@
+- LEVEL 1: BASIC (Foundation) (Aggregation)
+--  Q1. Total Orders
+select count(*) from orders;
+
+--  Q2. Total Revenue
+select sum(price+freight_value) as revenue from order_items;
+
+-- . Total Customers
+select count(distinct customer_id) from customers;
+
+--  Q4. Orders per Customer
+select customer_id, count(order_id) from orders group by customer_id;
+SELECT customer_id, COUNT(order_id) AS total_orders
+FROM orders
+GROUP BY customer_id;
+
+--  Q5. Monthly Orders Trend
+select
+	date_format(order_purchase_timestamp, '%Y-%m') as months,
+    count(*) as total_order 
+    from orders
+    group by months
+    order by months;
+    
+-- LEVEL 2: INTERMEDIATE (Joins + Business Thinking)
+-- Q6. Top 5 Customers by Spending
+
+select o.customer_id, 
+sum(oi.price+oi.freight_value) as total_spend 
+from orders o join order_items oi 
+on o.order_id=oi.order_id
+group by o.customer_id 
+order by total_spend desc limit 5;
+
+-- 7. Most Sold Product Categories
+
+select distinct product_id, count(product_id) as count from order_items group by product_id;
+select p.product_category_name, count(o.product_id) as sold from products p 
+join order_items as o 
+on p.product_id=o.product_id 
+group by p.product_category_name
+order by sold desc limit 5;
+
+
+
+-- --8. Average Order Value
+
+ select avg(total_orders) from (select order_id, sum(price+freight_value) as total_orders from order_items 
+group by order_id) t;
+
+SELECT AVG(order_total) 
+FROM (
+    SELECT order_id, SUM(price + freight_value) AS order_total
+    FROM order_items
+    GROUP BY order_id
+) t;
+
+-- 9.Customers with Only One Order
+select * from orders;
+select customer_id, count(order_id) total_order from orders
+group by customer_id
+having count(order_id)=1;
+
+-- LEVEL 3: ADVANCED (Window Functions)
+-- Q10. Rank Customers by Spending
+ 
+ select customer_id, total_spend, dense_rank() over(order by total_spend desc) as rnk from
+ (select o.customer_id, sum(oi.price+oi.freight_value) as total_spend 
+ from orders as o 
+ join order_items as oi 
+ on o.order_id=oi.order_id
+ group by o.customer_id) t;
+ 
+ -- Q11.Running Revenue Over Time 
+ select order_date, sum(revenue) over( order by order_date) as running_total 
+ from(select date(o.order_purchase_timestamp) as order_date, sum(oi.price+freight_value) as revenue from 
+ orders o join order_items oi 
+ on o.order_id= oi.order_id
+ group by order_date) t;
+ 
+ -- 🔹 Q12. Top Product in Each Category
+
+ select * from(
+ select p.product_category_name, p.product_id, count(*) as total_order,
+ rank() over( partition by p.product_category_name order by count(*) desc ) rnk
+  from 
+ products p join order_items oi on p.product_id=oi.product_id 
+ group by p.product_category_name,p.product_id) t
+ where rnk=1;
+ 
+--  LEVEL 4: PRO (ANALYSIS)
+
+-- Q13. Customer Retention (Repeat Customers)
+
+select customer_id, count(order_id) as counts from orders
+group by customer_id 
+having count(order_id)>1;
+
+-- 🔹 Q14. Churned Customers
+select customer_id, count(order_id) from orders 
+group by customer_id 
+having count(order_id) =1;
+
+-- 🔹 Q15. Revenue Contribution %
+SELECT product_category_name,
+SUM(revenue) * 100 / SUM(SUM(revenue)) OVER () AS contribution_pct
+FROM (
+    SELECT p.product_category_name,
+    (oi.price + oi.freight_value) AS revenue
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.product_id
+) t
+GROUP BY product_category_name;
